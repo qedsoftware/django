@@ -1,4 +1,6 @@
 from __future__ import unicode_literals
+import unicodedata
+
 
 from django import forms
 from django.contrib.auth import (
@@ -19,6 +21,15 @@ from django.utils.http import urlsafe_base64_encode
 from django.utils.safestring import mark_safe
 from django.utils.text import capfirst
 from django.utils.translation import ugettext, ugettext_lazy as _
+
+
+def _unicode_ci_compare(s1, s2):
+    """
+    Perform case-insensitive comparison of two identifiers, using the
+    recommended algorithm from Unicode Technical Report 36, section
+    2.11.2(B)(2).
+    """
+    return unicodedata.normalize('NFKC', s1).casefold() == unicodedata.normalize('NFKC', s2).casefold()
 
 
 class ReadOnlyPasswordHashWidget(forms.Widget):
@@ -225,7 +236,12 @@ class PasswordResetForm(forms.Form):
         """
         active_users = get_user_model()._default_manager.filter(
             email__iexact=email, is_active=True)
-        return (u for u in active_users if u.has_usable_password())
+        return (
+            u for u in active_users
+            if u.has_usable_password() and
+            _unicode_ci_compare(email, u.email)
+        )
+
 
     def save(self, domain_override=None,
              subject_template_name='registration/password_reset_subject.txt',

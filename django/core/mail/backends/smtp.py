@@ -115,8 +115,9 @@ class EmailBackend(BaseEmailBackend):
         """A helper method that does the actual sending."""
         if not email_message.recipients():
             return False
-        from_email = sanitize_address(email_message.from_email, email_message.encoding)
-        recipients = [sanitize_address(addr, email_message.encoding)
+        encoding = email_message.encoding or settings.DEFAULT_CHARSET
+        from_email = sanitize_address(email_message.from_email, encoding)
+        recipients = [sanitize_address(addr, encoding)
                       for addr in email_message.recipients()]
         message = email_message.message()
         try:
